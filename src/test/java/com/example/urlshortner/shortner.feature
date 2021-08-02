@@ -8,32 +8,31 @@ Feature: Shortner
         When method get
         Then status 200
         And match response[*].id contains [1, 2]
-        And match response contains And match response == { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
+        And match response contains { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
 
     Scenario: Show URL
         Given path "/urls/1"
         When method get
         Then status 200
-        And match response[*].id contains [1, 2]
-        And match response contains And match response == { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
+        And match response == { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
 
     Scenario: Index filter for URL
         Given param filter = "url:https://www.axelspringer.com/en/brands/rolling-stone"
         Given path "/urls"
         When method get
         Then status 200
-        And match response contains And match response == { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
+        And match response == { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
 
     Scenario: Index filter for uniq path
         Given param filter = "uniqPath:Aj8L3P"
         Given path "/urls/1"
         When method get
         Then status 200
-        And match response contains And match response == { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
+        And match response == { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
 
     Scenario: Call create URL
         Given path "/urls"
-        When request { url: "https://www.axelspringer.com/en/inside/newspapers-fresh-as-dew-and-still-fragrant" }
+        When request { longUrl: "https://www.axelspringer.com/en/inside/newspapers-fresh-as-dew-and-still-fragrant" }
         When method post
         Then status 200
         And match response == { id: #present, uniqPath: "#present", url: "https://www.axelspringer.com/en/inside/newspapers-fresh-as-dew-and-still-fragrant", hitCounter: 0, createCounter: 1 }
