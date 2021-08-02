@@ -11,6 +11,7 @@ import java.util.Optional;
 
 @Service
 public class ShortUrlService {
+
     @Autowired
     ShortUrlRepository shortUrlRepository;
 
@@ -35,10 +36,9 @@ public class ShortUrlService {
     If the generated id is not uniq, the class calls itself again.*/
     private ShortUrl createUniqShortUrl(ShortUrl shortUrl) {
         String uniqPath = RandomStringUtils.randomAlphanumeric(1);
-        uniqPath += shortUrl.getShortPath();
         shortUrl.setShortPath(shortUrl.getShortPath() + uniqPath);
 
-        if(isUniqPath(uniqPath)) {
+        if (isUniqPath(uniqPath)) {
             shortUrlRepository.save(shortUrl);
         } else {
             createUniqShortUrl(shortUrl);
