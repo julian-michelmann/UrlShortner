@@ -19,6 +19,7 @@ public class ShortUrl {
 
     @Schema(description = "The URL to be shortened", example = "https://www.axelspringer.com/en/inside/eye-on-everything-a-roller-coaster-ride-at-the-spandau-printing-house")
     @NotBlank(message = "URL must be set")
+    //@URL url validation needs to be added
     String longUrl;
 
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
@@ -29,4 +30,11 @@ public class ShortUrl {
 
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     Long createCounter;
+
+    public void init() {
+        id = null;
+        createCounter = 0L;
+        hitCounter = 0L;
+        shortPath = "";
+    }
 }
