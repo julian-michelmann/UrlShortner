@@ -9,10 +9,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@TestPropertySource(locations = "classpath:local-test.properties")
+@TestPropertySource(locations = "classpath:application.yaml")
 public class KarateTests {
     @Karate.Test
-    @Sql(scripts = {"classpath:/url-data.sql"})
+    @Sql(scripts = {"classpath:/test-data.sql"})
     public Karate shortner() {
         return Karate.run("shortner").relativeTo(getClass());
     }

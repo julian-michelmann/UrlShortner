@@ -1,117 +1,80 @@
 Feature: Shortner
 
     Background:
-        Given url "http://localhost:7000"
+        Given url "http://localhost:8090"
 
-    Scenario: Index urls
+    Scenario: Creating a shorten url
         Given path "/urls"
-        When method get
-        Then status 200
-        And match response[*].id contains [1, 2]
-        And match response contains { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
-
-    Scenario: Show URL
-        Given path "/urls/1"
-        When method get
-        Then status 200
-        And match response == { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
-
-    Scenario: Index filter for URL
-        Given param filter = "url:https://www.axelspringer.com/en/brands/rolling-stone"
-        Given path "/urls"
-        When method get
-        Then status 200
-        And match response == { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
-
-    Scenario: Index filter for uniq path
-        Given param filter = "uniqPath:Aj8L3P"
-        Given path "/urls/1"
-        When method get
-        Then status 200
-        And match response == { id: 1, uniqPath: "Aj8L3P", url: "https://www.axelspringer.com/en/brands/rolling-stone", hitCounter: 5, createCounter: 8 }
-
-    Scenario: Call create URL
-        Given path "/urls"
-        When request { longUrl: "https://www.axelspringer.com/en/inside/newspapers-fresh-as-dew-and-still-fragrant" }
+        When request { url: "https://www.axelspringer.com/en/inside/newspapers-fresh-as-dew-and-still-fragrant" }
         When method post
-        Then status 200
-        And match response == { id: #present, uniqPath: "#present", url: "https://www.axelspringer.com/en/inside/newspapers-fresh-as-dew-and-still-fragrant", hitCounter: 0, createCounter: 1 }
-        * def uniqPath = response.uniqPath
-        * def url = response.url
+        Then status 201
+        And match response == {uniqPathPart:'#present'}
+        And match header Location ==  '/aj8l3q'
+        
 
-        Given path "/" + uniqPath
+    Scenario: Created url should be unique
+        Given path "/urls"
+        When request { url: "https://www.axelspringer.com/de/ax-press-release/microsoft-ceo-satya-nadella-erhaelt-axel-springer-award-2023" }
+        When method post
+        Then status 201
+        * def uniqPathPart = response.uniqPathPart
+    
+        Given path "/urls"
+        When request { url: "https://www.axelspringer.com/de/inside/tschuess-gruenes-as-zeichen" }
+        When method post
+        Then status 201
+        Then match response.uniqPathPart != uniqPathPart
+
+    Scenario: Do not create new shorten url for existing url
+        Given path "/urls"
+        When request { url: "https://www.axelspringer.com/de/inside/wie-der-vater-so-der-sohn" }
+        When method post
+        Then status 201
+        * def uniqPathPart = response.uniqPathPart
+
+        Given path "/urls"
+        When request { url: "https://www.axelspringer.com/de/inside/wie-der-vater-so-der-sohn" }
+        When method post
+        Then status 201
+        Then match response.uniqPathPart == uniqPathPart
+    
+    Scenario: Get redirected by shorten url
         * configure followRedirects = false
+        Given path "/AJ8L3P"
         When method get
-        Then status 302
-        And match header Location == url
+        Then status 308
+        And match header Location == "https://www.axelspringer.com/de/marken/politico"
 
-    Scenario: Call create multiple times create same uniqPath
+    Scenario: Create and get by url
+        * configure followRedirects = false
         Given path "/urls"
-        When request { url: "https://www.axelspringer.com/en/inside/more-than-just-scoring-goals" }
+        When request { url: "https://www.axelspringer.com/de/marken/politico/protocol" }
         When method post
-        Then status 200
-        And match response == { id: #present, uniqPath: "#present", url: "https://www.axelspringer.com/en/inside/more-than-just-scoring-goals", hitCounter: 0, createCounter: 1 }
-        * def uniqPath = response.uniqPath
+        Then status 201
+        * def uniqPathPart = response.uniqPathPart
+        
+        Given path "/" + uniqPathPart
+        When method get
+        Then status 308
+        And match header Location == "https://www.axelspringer.com/de/marken/politico/protocol"
+        
+    Scenario: Try to get a none existing url
+        Given path "/KM8L3P"
+        When method get
+        Then status 404
+        And match response.message == "Url could not be found"
 
+    Scenario: Get an 400 when trying to crate from an invalid url
         Given path "/urls"
-        When request { url: "https://www.axelspringer.com/en/inside/more-than-just-scoring-goals" }
-        When method post
-        Then status 200
-        And match response.uniqPath == uniqPath
-
-        Given path "/urls"
-        When request { url: "https://www.axelspringer.com/en/inside/more-than-just-scoring-goals" }
-        When method post
-        Then status 200
-        And match response.uniqPath == uniqPath
-
-    Scenario: Different protocols produces different uniqPaths
-        Given path "/urls"
-        When request { url: "https://www.axelspringer.com/en/brands/stepstone-3" }
-        When method post
-        Then status 200
-        * def uniqPath = response.uniqPath
-
-        Given path "/urls"
-        When request { url: "http://www.axelspringer.com/en/brands/stepstone-3" }
-        When method post
-        Then status 200
-        And match response.uniqPath != uniqPath
-
-
-    Scenario Outline: Call create with invalid url <url> produces error
-        Given path "/urls"
-        When request { url: <url> }
+        When request { url: "foo" }
         When method post
         Then status 400
-        And match response == "Error"
+        And assert response.errors.length == 1
+        And match response.errors[0] == "The URL you provided is invalid"
 
-        Examples:
-            | url                                                             |
-            | www.axelspringer.com/en/inside/more-than-just-scoring-goals     |
-            | https://                                                        |
-            | https://www.axelspringer/en/inside/more-than-just-scoring-goals |
-
-    Scenario: Hit counter works
-        Given path "/K1fmF8"
-        * configure followRedirects = false
-        Then status 302
-
-        Given path "/K1fmF8"
-        * configure followRedirects = false
-        Then status 302
-
-        Given path "/K1fmF8"
-        * configure followRedirects = false
-        Then status 302
-
-        Given path "/K1fmF8"
-        * configure followRedirects = false
-        Then status 302
-
-        Given path "urls/2"
-        When method get
-        Then status 200
-        And match response.hitCounter = 4
-
-
+    Scenario: http url are valid
+        Given path "/urls"
+        When request { url: "http://www.axelspringer.com/de/inside/wie-der-vater-so-der-sohn" }
+        When method post
+        Then status 201
+        And match response.uniqPathPart == '#present'
